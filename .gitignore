@@ -1,0 +1,7 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.log
+.second_pass_draft.json
+.study_log_index.json
