@@ -19,7 +19,7 @@ I built it for my own use while learning business analysis, and it works for any
 - **Verify before write.** The log is meant to be a reference I can trust, so entries are fact-checked and corrected before they are saved, not after.
 - **Source of truth, with honest limits.** When a link is provided, the checker treats it as ground truth and quotes what the source says when something contradicts it. A claim the source simply doesn't cover is not called wrong. Video links, PDFs, JavaScript-only pages, and pages behind a login can't be read, and the app says so instead of pretending a check happened against them. The fetched page is passed to the model as data, not instructions.
 - **No duplicate entries.** Studying the same material again enriches the existing entry instead of adding a second one. Similar-but-differently-worded entries are caught too, by the same call that classifies the subject, so it adds no extra API cost on a normal save.
-- **Nothing lost mid-answer.** In-progress notes and answers autosave to a local draft file and are restored if the tab is closed. The draft is cleared once the entry is saved.
+- **Nothing lost mid-answer.** In-progress notes and answers autosave to a local draft file and are restored if the tab is closed. The draft is cleared once the entry is saved, but every save also keeps a private, local-only copy of the original notes and answers, viewable in a "Recover a previous session" panel.
 - **Deliberately small.** One page, a few single-purpose model calls, one Markdown file as the system of record. No database, no accounts, no multi-page navigation.
 
 ## Limits

@@ -23,6 +23,8 @@ load_dotenv()
 LOG_PATH = Path(__file__).parent / "study_log.md"
 DRAFT_PATH = Path(__file__).parent / ".second_pass_draft.json"
 INDEX_PATH = Path(__file__).parent / ".study_log_index.json"
+HISTORY_PATH = Path(__file__).parent / ".second_pass_history.jsonl"
+HISTORY_SHOWN = 10
 
 SEED_CONTENT = (
     "# Study Log\n\n"
@@ -120,6 +122,35 @@ def save_draft(material: str, prompts: list[str] | None, answer: str, source_url
 
 def clear_draft() -> None:
     DRAFT_PATH.unlink(missing_ok=True)
+
+
+def append_history(material: str, source_url: str, prompts: list[str], answer: str, subject: str, title: str) -> None:
+    """Keep the raw inputs of every saved session (append-only, gitignored). The in-progress
+    draft is deleted on a successful save, so without this, closing the tab afterwards loses
+    the exact notes and answers that produced the entry."""
+    record = {
+        "saved_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "subject": subject,
+        "title": title,
+        "material": material,
+        "source_url": source_url,
+        "prompts": prompts,
+        "answer": answer,
+    }
+    with HISTORY_PATH.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def load_history(limit: int = HISTORY_SHOWN) -> list[dict]:
+    if not HISTORY_PATH.exists():
+        return []
+    records = []
+    for line in HISTORY_PATH.read_text(encoding="utf-8").splitlines():
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue  # a half-written line should never hide the rest of the history
+    return records[-limit:][::-1]
 
 
 def material_key(material: str) -> str:
@@ -357,6 +388,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
         entry_text = append_entry(subject, tag, title, bullets)
 
     upsert_index(material, subject, tag, title, bullets, entry_text)
+    append_history(material, source_url, prompts_given, raw_summary, subject, title)
     st.session_state["last_entry"] = {
         "subject": subject,
         "tag": tag,
@@ -430,6 +462,28 @@ if st.session_state.get("last_entry"):
             with st.spinner("Re-checking the revised notes..."):
                 st.session_state["last_check"] = llm.complete_json(recheck_system, recheck_user)
             st.rerun()
+
+st.divider()
+
+st.header("Recover a previous session")
+with st.expander("Raw notes and answers from your last saved sessions", expanded=False):
+    st.caption(
+        "Every save keeps a private copy of exactly what you typed (stored locally, never "
+        "published), so closing the tab never costs you the original notes or answers."
+    )
+    history = load_history()
+    if not history:
+        st.caption("Nothing saved yet. Sessions appear here after your next save.")
+    for record in history:
+        st.markdown(f"**{record['title']}** — saved {record['saved_at'].replace('T', ' ')}")
+        if record.get("source_url"):
+            st.caption(f"Source: {record['source_url']}")
+        if record.get("prompts"):
+            st.caption("Prompts: " + " | ".join(record["prompts"]))
+        st.caption("What you studied")
+        st.code(record["material"], language=None)
+        st.caption("Your answers")
+        st.code(record["answer"], language=None)
 
 st.divider()
 
