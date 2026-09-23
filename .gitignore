@@ -5,3 +5,4 @@ __pycache__/
 *.log
 .second_pass_draft.json
 .study_log_index.json
+.second_pass_history.jsonl

@@ -67,8 +67,12 @@ Running reference built from real study sessions, across whatever you're current
 ## Product Management
 **Product Vision vs Strategy and Leadership Principles** &mdash; 2026-09-23
 
-- Four parts: (a) make tough decisions on what matters, (b) generate and leverage insights, (c) turn insights into actions, (d) actively manage and don't micro-manage
-- A product vision gives direction, and product strategy gives the "how-to" to get there. Having both minimizes micro-managing because everyone has a clear roadmap to the destination, even if their path deviates slightly; what's important is that the overarching goal and destination are accomplished
+- Product strategy has four steps: (a) be willing to make tough choices on what's really important, (b) generate, identify, and leverage insights, (c) convert insights into action, (d) manage actively without resorting to micro-management. None are easy, but all are essential
+- Product vision describes the future the team is trying to create, typically 2-5 years out (5-10 for hardware or device-centric companies). It is not a spec; it is a persuasive piece (a storyboard, a narrative, or a prototype called a "visiontype") meant to communicate the vision and inspire teams, investors, and partners
+- Product strategy is how we make the vision a reality while meeting the company's needs along the way. It is the overall approach and the rationale for it, and it does not cover the details; those are the tactics. Strategy helps decide what problems to solve, product discovery figures out the tactics that solve them, and product delivery builds the solution
+- A product vision gives direction (where we ultimately want to go), and product strategy gives the approach for getting there. Having both minimizes micro-managing because a team that understands the broader context (the vision and the path to it) can act with autonomy and make good choices; the more product teams there are, the more essential this shared context is. If the path deviates slightly, what matters is that the vision is reached: "stubborn on the vision, flexible on the details" (Jeff Bezos, quoted in the article)
+- Analogy to leadership vs. management: leadership inspires and sets the direction, and management helps us get there. The vision should be inspiring; the strategy should be very intentional
+- Source: Marty Cagan, "Vision vs. Strategy," Silicon Valley Product Group (2016), https://www.svpg.com/vision-vs-strategy/. My original answers (the four steps; vision gives direction, strategy gives the path; both together reduce micro-management) were right in substance; the wording and detail above were corrected and expanded against the article on 2026-09-23
 
 
 **Product Discovery vs. Delivery Responsibilities** _Framework_ &mdash; 2026-09-23
