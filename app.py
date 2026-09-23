@@ -276,11 +276,24 @@ raw_summary = st.text_area(
 subjects = existing_subjects()
 subject_hint = st.selectbox("Subject hint (optional, AI will still double-check)", ["Let AI decide"] + subjects)
 
+def _bullet_count(text: str) -> int:
+    return sum(1 for line in text.splitlines() if line.strip().startswith(("-", "*")))
+
+
+def loses_content(old: str, new: str) -> bool:
+    """A correction may fix a wrong statement, but it must never delete what the user wrote.
+    Code-enforced rather than only prompted: a revision that has fewer bullets, or is
+    materially shorter, is treated as having dropped content and is rejected."""
+    return _bullet_count(new) < _bullet_count(old) or len(new.strip()) < 0.8 * len(old.strip())
+
+
 def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_text=None, max_revisions=2):
     """Fact-check the bullets BEFORE they're written to the log. If the check
-    flags anything, revise just the flagged points and re-check, up to
+    flags something, revise just the flagged points and re-check, up to
     max_revisions times. When a source link was loaded, both the check and the
-    revision use it as the reference. Returns (bullets, final_check, was_revised)."""
+    revision use it as the reference. A revision that would drop content is
+    rejected and the last good bullets are kept, with the flags left visible.
+    Returns (bullets, final_check, was_revised, revision_rejected)."""
     revised = False
     for attempt in range(max_revisions + 1):
         check_system, check_user = check_understanding_prompt(material_text, prompts, bullets, source_text)
@@ -290,9 +303,12 @@ def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_
         rev_system, rev_user = revise_entry_prompt(
             material_text, prompts, raw_answer, bullets, check["flags"], source_text
         )
-        bullets = llm.complete_json(rev_system, rev_user)["markdown_bullets"]
+        candidate = llm.complete_json(rev_system, rev_user)["markdown_bullets"]
+        if loses_content(bullets, candidate):
+            return bullets, check, revised, True
+        bullets = candidate
         revised = True
-    return bullets, check, revised
+    return bullets, check, revised, False
 
 
 if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
@@ -327,9 +343,11 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
         bullets = result["markdown_bullets"]
 
     with st.spinner("Fact-checking your notes before saving..."):
-        bullets, check, was_revised = verify_and_correct(
+        bullets, check, was_revised, revision_rejected = verify_and_correct(
             llm, material, prompts_given, bullets, raw_summary, source_text
         )
+    if revision_rejected:
+        st.warning("The fact-check wanted to change your notes, but the rewrite would have removed some of what you wrote, so it was NOT applied. Your entry was saved as you wrote it; the flags below are for you to review.")
     if was_revised:
         st.info("The fact-check flagged something in your notes, so the saved entry has been corrected (your original wording is kept everywhere else).")
 
@@ -387,6 +405,9 @@ if st.session_state.get("last_entry"):
             with st.spinner("Revising based on the flags..."):
                 revised = llm.complete_json(rev_system, rev_user)
             new_bullets = revised["markdown_bullets"]
+            if loses_content(entry["bullets"], new_bullets):
+                st.warning("That revision would have removed some of what you wrote, so it was not applied. Your saved entry is unchanged.")
+                st.stop()
             new_entry_text = replace_entry(entry["entry_text"], new_bullets)
             entry["bullets"] = new_bullets
             entry["entry_text"] = new_entry_text

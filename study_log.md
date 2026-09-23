@@ -65,6 +65,11 @@ Running reference built from real study sessions, across whatever you're current
 - Don't remember the steps of writing a BRD (need to review).
 
 ## Product Management
+**Product Vision vs Strategy and Leadership Principles** &mdash; 2026-09-23
+
+- Four parts: (a) make tough decisions on what matters, (b) generate and leverage insights, (c) turn insights into actions, (d) actively manage and don't micro-manage
+- A product vision gives direction, and product strategy gives the "how-to" to get there. Having both minimizes micro-managing because everyone has a clear roadmap to the destination, even if their path deviates slightly; what's important is that the overarching goal and destination are accomplished
+
 
 **Product Discovery vs. Delivery Responsibilities** _Framework_ &mdash; 2026-09-23
 
