@@ -101,3 +101,4 @@ Running reference built from real study sessions, across whatever you're current
 - So the article's point is that as AI-powered tools take over more of product delivery, product discovery - the judgement-driven work of understanding the problem and finding a good solution - becomes the main activity of product teams; a good idea alone isn't enough because it skips over this discovery work
 - The article notes average team size is shrinking by roughly 20-30% due to productivity gains from AI-powered tools
 - Gen AI-based tools also broaden the scope of responsibility product teams can take on
+- Source: Marty Cagan, "A Vision For Product Teams," SVPG (2025), https://www.svpg.com/a-vision-for-product-teams/
