@@ -120,6 +120,38 @@ def check_understanding_prompt(
     return system, user
 
 
+def grade_answers_prompt(
+    original_material: str, retrieval_prompts: list[str], raw_answer: str, source_text: str | None = None
+) -> tuple[str, str]:
+    """Feedback to the user on their own answers, prompt by prompt. Unlike the log check,
+    this DOES judge completeness: an answer that doesn't address the prompt is a gap."""
+    prompts_block = "\n".join(f"{i}. {p}" for i, p in enumerate(retrieval_prompts, 1)) or "(none recorded)"
+    system = (
+        "You give a self-learner honest feedback on their answers to retrieval-practice "
+        "prompts. For EACH prompt, judge their answer and give one verdict: \"correct\" "
+        "(accurate and actually answers the question), \"partly correct\" (accurate as far "
+        "as it goes but misses a key part of the answer, or mixes right and wrong), "
+        "\"incorrect\" (the main claim is wrong or the reasoning doesn't match the material), "
+        "or \"not answered\" (blank, or true but vague and doesn't address what was asked). "
+        "Be genuinely critical: a true-sounding sentence that dodges the question is not "
+        "correct. In \"feedback\", say specifically what they got right and what was wrong "
+        "or missing, in one or two plain sentences. In \"correct_answer\", give a concise "
+        "complete answer to the prompt. "
+        + SOURCE_RULES
+        + "When a SOURCE is given, it is the ground truth for both the verdict and the "
+        "correct answer. Without one, use the material and your own knowledge.\n\n"
+        'Respond with ONLY this JSON: {"results": [{"prompt": "...", "verdict": "...", '
+        '"feedback": "...", "correct_answer": "..."}]}'
+    )
+    user = (
+        f"Original material/topic:\n{original_material or '(not provided)'}\n\n"
+        f"Prompts:\n{prompts_block}\n\n"
+        f"Their answers:\n{raw_answer}"
+        + _source_block(source_text)
+    )
+    return system, user
+
+
 def revise_entry_prompt(
     original_material: str,
     retrieval_prompts: list[str],
@@ -139,6 +171,9 @@ def revise_entry_prompt(
         "question - leave everything else exactly as the user wrote it. Never "
         "delete a point, merge points together, or drop any part of the notes: "
         "fix a wrong statement in place, and keep every bullet the user wrote. "
+        "If a flag says a prompt was answered only partly or not at all, add the "
+        "missing answer: extend the relevant bullet or add a new one, so the notes "
+        "work as a complete, correct reference. "
         "The corrected notes must contain at least as many bullets as the "
         "current ones. Use "
         "the original material as the source of truth for the correction; if "

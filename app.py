@@ -12,6 +12,7 @@ from src.orchestration.source import fetch_source
 from src.orchestration.prompts import (
     check_understanding_prompt,
     enrich_entry_prompt,
+    grade_answers_prompt,
     organize_entry_prompt,
     retrieval_prompts_prompt,
     revise_entry_prompt,
@@ -124,7 +125,9 @@ def clear_draft() -> None:
     DRAFT_PATH.unlink(missing_ok=True)
 
 
-def append_history(material: str, source_url: str, prompts: list[str], answer: str, subject: str, title: str) -> None:
+def append_history(
+    material: str, source_url: str, prompts: list[str], answer: str, subject: str, title: str, feedback: list[dict]
+) -> None:
     """Keep the raw inputs of every saved session (append-only, gitignored). The in-progress
     draft is deleted on a successful save, so without this, closing the tab afterwards loses
     the exact notes and answers that produced the entry."""
@@ -136,6 +139,7 @@ def append_history(material: str, source_url: str, prompts: list[str], answer: s
         "source_url": source_url,
         "prompts": prompts,
         "answer": answer,
+        "feedback": feedback,
     }
     with HISTORY_PATH.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -151,6 +155,15 @@ def load_history(limit: int = HISTORY_SHOWN) -> list[dict]:
         except json.JSONDecodeError:
             continue  # a half-written line should never hide the rest of the history
     return records[-limit:][::-1]
+
+
+def entry_source_url(title: str) -> str:
+    """The source link the most recent session saved under this entry used, or "" if none
+    (or if the entry predates the history file)."""
+    for record in load_history(limit=10_000):
+        if record.get("title") == title:
+            return (record.get("source_url") or "").strip()
+    return ""
 
 
 def material_key(material: str) -> str:
@@ -318,14 +331,32 @@ def loses_content(old: str, new: str) -> bool:
     return _bullet_count(new) < _bullet_count(old) or len(new.strip()) < 0.8 * len(old.strip())
 
 
-def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_text=None, max_revisions=2):
-    """Fact-check the bullets BEFORE they're written to the log. If the check
+def answer_gaps(grades: list[dict]) -> list[str]:
+    """Turn grading results that weren't fully correct into flags the revise step can fix,
+    so the log ends up with the correct answer even when the user's answer missed it."""
+    return [
+        f'Prompt "{g.get("prompt", "")}" was {g.get("verdict")}: {g.get("feedback", "")} '
+        f'Correct answer: {g.get("correct_answer", "")}'
+        for g in grades
+        if g.get("verdict") != "correct"
+    ]
+
+
+def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_text=None, gaps=None, max_revisions=2):
+    """Fill any gaps the grading found, then fact-check the bullets BEFORE they're written
+    to the log. If the check
     flags something, revise just the flagged points and re-check, up to
     max_revisions times. When a source link was loaded, both the check and the
     revision use it as the reference. A revision that would drop content is
     rejected and the last good bullets are kept, with the flags left visible.
     Returns (bullets, final_check, was_revised, revision_rejected)."""
     revised = False
+    if gaps:
+        rev_system, rev_user = revise_entry_prompt(material_text, prompts, raw_answer, bullets, gaps, source_text)
+        candidate = llm.complete_json(rev_system, rev_user)["markdown_bullets"]
+        if not loses_content(bullets, candidate):
+            bullets = candidate
+            revised = True
     for attempt in range(max_revisions + 1):
         check_system, check_user = check_understanding_prompt(material_text, prompts, bullets, source_text)
         check = llm.complete_json(check_system, check_user)
@@ -360,6 +391,8 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
 
         dup_title = (result.get("duplicate_of_title") or "").strip()
         same_topic = find_entry(dup_title) if dup_title else None
+        if same_topic and entry_source_url(dup_title) != source_url.strip():
+            same_topic = None  # different (or unknown) source: a separate article is a separate entry
         if same_topic:
             st.info(f'Looks like the same topic as an existing entry ("{dup_title}") - enriching it instead of creating a duplicate.')
             target = {**same_topic, "title": dup_title}
@@ -368,19 +401,32 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
         enrich_system, enrich_user = enrich_entry_prompt(target["bullets"], raw_summary)
         with st.spinner("Merging into your existing entry..."):
             bullets = llm.complete_json(enrich_system, enrich_user)["markdown_bullets"]
+        if loses_content(target["bullets"], bullets):
+            # Same guard as the fact-check: a merge may add, never delete. Keep the
+            # existing entry whole and add the new answer's bullets underneath it.
+            if not result:
+                system, user = organize_entry_prompt(raw_summary, subjects, existing_titles(), "")
+                result = llm.complete_json(system, user)
+            bullets = target["bullets"].rstrip() + "\n" + result["markdown_bullets"]
         subject, tag, title = target["subject"], target["tag"], target["title"]
     else:
         subject, tag, title = result["subject"], result.get("tag", ""), result["title"]
         bullets = result["markdown_bullets"]
 
+    grades = []
+    if prompts_given:
+        grade_system, grade_user = grade_answers_prompt(material, prompts_given, raw_summary, source_text)
+        with st.spinner("Checking your answers..."):
+            grades = llm.complete_json(grade_system, grade_user).get("results", [])
+
     with st.spinner("Fact-checking your notes before saving..."):
         bullets, check, was_revised, revision_rejected = verify_and_correct(
-            llm, material, prompts_given, bullets, raw_summary, source_text
+            llm, material, prompts_given, bullets, raw_summary, source_text, answer_gaps(grades)
         )
     if revision_rejected:
         st.warning("The fact-check wanted to change your notes, but the rewrite would have removed some of what you wrote, so it was NOT applied. Your entry was saved as you wrote it; the flags below are for you to review.")
     if was_revised:
-        st.info("The fact-check flagged something in your notes, so the saved entry has been corrected (your original wording is kept everywhere else).")
+        st.info("The saved entry was corrected or filled in where your answers were wrong or incomplete (your original wording is kept everywhere else). See how you did on each prompt below.")
 
     if target:
         entry_text = replace_entry(target["entry_text"], bullets)
@@ -388,7 +434,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
         entry_text = append_entry(subject, tag, title, bullets)
 
     upsert_index(material, subject, tag, title, bullets, entry_text)
-    append_history(material, source_url, prompts_given, raw_summary, subject, title)
+    append_history(material, source_url, prompts_given, raw_summary, subject, title, grades)
     st.session_state["last_entry"] = {
         "subject": subject,
         "tag": tag,
@@ -400,6 +446,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
     st.session_state["last_prompts"] = prompts_given
     st.session_state["last_answer"] = raw_summary
     st.session_state["last_check"] = check
+    st.session_state["last_grades"] = grades
     st.session_state["last_source_text"] = source_text
     clear_draft()
 
@@ -408,6 +455,18 @@ if st.session_state.get("last_entry"):
     check = st.session_state.get("last_check") or {}
 
     st.success(f'Saved under "{entry["subject"]}" as "{entry["title"]}".')
+
+    grades = st.session_state.get("last_grades") or []
+    if grades:
+        graded_against = "against your source link" if st.session_state.get("last_source_text") else "no source loaded"
+        st.markdown(f"**How you did on the prompts** _(AI-graded, {graded_against}; verify anything that surprises you)_")
+        for i, g in enumerate(grades, 1):
+            verdict = g.get("verdict", "")
+            line = f"**{i}. {verdict.capitalize()}.** {g.get('feedback', '')}"
+            if verdict == "correct":
+                st.success(line)
+            else:
+                st.warning(line + f"\n\n**Correct answer:** {g.get('correct_answer', '')}")
     st.markdown(f"**{entry['title']}**" + (f" _{entry['tag']}_" if entry["tag"] else ""))
     st.markdown(entry["bullets"])
     st.caption("Copy this into Google Docs (or wherever else) too, if you want it there as well.")
@@ -484,6 +543,8 @@ with st.expander("Raw notes and answers from your last saved sessions", expanded
         st.code(record["material"], language=None)
         st.caption("Your answers")
         st.code(record["answer"], language=None)
+        for i, g in enumerate(record.get("feedback") or [], 1):
+            st.caption(f"Prompt {i}: {g.get('verdict', '')}. {g.get('feedback', '')}")
 
 st.divider()
 

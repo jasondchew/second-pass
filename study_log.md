@@ -65,6 +65,22 @@ Running reference built from real study sessions, across whatever you're current
 - Don't remember the steps of writing a BRD (need to review).
 
 ## Product Management
+**Feature Request Spreadsheets vs Product Discovery** &mdash; 2026-09-30
+
+- A feature request spreadsheet approach involves compiling and prioritizing a long list of feature requests into a roadmap. Cagan calls it problematic because it pushes through features users don't value or need, increasing complexity, decreasing usability, and wasting engineering cycles; feature requests are only specific theories about what might help
+- Locking in specific features at the roadmap stage effectively skips product discovery, which is the most important part of the product manager's job and the key to great products, since at the roadmap stage you don't yet know if those features are the right ones or if they can be made useful and usable
+
+**Why OKRs Fail: Feature Teams, Manager Objectives, and Leadership** &mdash; 2026-09-29
+
+- Three fundamental reasons companies struggle to get value from the OKR technique: (1) feature teams instead of empowered product teams, (2) manager's objectives instead of product team objectives, (3) the role of leadership is largely missing (the root of the problem)
+- OKRs are first and foremost an empowerment technique: give product teams real problems to solve, then give them the space to solve them
+- Giving a team objectives while still handing it a roadmap of features and release dates is not real empowerment: the team is still being told the solution, so it is still a feature team, and the objectives become a box-checking exercise
+- Manager's objectives vs. team objectives: each functional manager (engineering, design, product) cascades their own objectives to their people, so cross-functional teammates end up working on their own managers' objectives rather than collaborating on the team's objective. Individual objectives add a further layer of complexity and dilution on top of that
+- Leadership: many leaders think empowered teams means less management ("let teams pick objectives and see where we are at the end of the quarter"); it actually means better management
+- Successful companies don't succeed because they use OKRs; they use OKRs because the technique is designed to leverage the empowered product team model (correlation vs. causation)
+- Three prerequisites for getting value from OKRs: move from feature teams to empowered product teams; stop manager and individual objectives and focus on team objectives; leaders step up to turn product strategy into action
+- Source: Marty Cagan, "Team Objectives - Overview," SVPG (2020), https://www.svpg.com/team-objectives-overview/
+
 **Product Vision vs Strategy and Leadership Principles** &mdash; 2026-09-23
 
 - Product strategy has four steps: (a) be willing to make tough choices on what's really important, (b) generate, identify, and leverage insights, (c) convert insights into action, (d) manage actively without resorting to micro-management. None are easy, but all are essential
@@ -73,7 +89,6 @@ Running reference built from real study sessions, across whatever you're current
 - A product vision gives direction (where we ultimately want to go), and product strategy gives the approach for getting there. Having both minimizes micro-managing because a team that understands the broader context (the vision and the path to it) can act with autonomy and make good choices; the more product teams there are, the more essential this shared context is. If the path deviates slightly, what matters is that the vision is reached: "stubborn on the vision, flexible on the details" (Jeff Bezos, quoted in the article)
 - Analogy to leadership vs. management: leadership inspires and sets the direction, and management helps us get there. The vision should be inspiring; the strategy should be very intentional
 - Source: Marty Cagan, "Vision vs. Strategy," Silicon Valley Product Group (2016), https://www.svpg.com/vision-vs-strategy/. My original answers (the four steps; vision gives direction, strategy gives the path; both together reduce micro-management) were right in substance; the wording and detail above were corrected and expanded against the article on 2026-09-23
-
 
 **Product Discovery vs. Delivery Responsibilities** _Framework_ &mdash; 2026-09-23
 
