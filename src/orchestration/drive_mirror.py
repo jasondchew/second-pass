@@ -25,7 +25,7 @@ DOC_TITLE = "Study Journal (Data & AI)"
 
 def render_html(log_text: str) -> str:
     """study_log.md -> HTML Drive converts to a formatted Doc: subjects as headings, each
-    entry title as a subheading, and a linked table of contents at the top."""
+    entry title as a subheading (both show up in the Docs outline for navigation)."""
     text = log_text.replace("# Study Log", f"# {DOC_TITLE}", 1)
 
     # Entry lines look like: **Title** _Tag_ &mdash; 2026-09-21  (tag optional)
@@ -40,31 +40,15 @@ def render_html(log_text: str) -> str:
     text = re.sub(r"(?<=[\w)])\s?\*\s?(?=[\w(])", lambda m: m.group(0).replace("*", "\\*"), text)
     body = markdown.markdown(text, extensions=["sane_lists"])
 
-    toc, n = [], [0]
-    def add_id(m):
-        n[0] += 1
-        toc.append((m.group(1), f"h{n[0]}", re.sub("<[^>]+>", "", m.group(2))))
-        return f'<h{m.group(1)} id="h{n[0]}">{m.group(2)}</h{m.group(1)}>'
-    body = re.sub(r"<h([23])>(.*?)</h\1>", add_id, body)
-
-    items, open_sub = [], False
-    for level, hid, label in toc:
-        if level == "2":
-            if open_sub:
-                items.append("</ul></li>")
-            items.append(f'<li><a href="#{hid}">{label}</a><ul>')
-            open_sub = True
-        else:
-            items.append(f'<li><a href="#{hid}">{label}</a></li>')
-    if open_sub:
-        items.append("</ul></li>")
-    toc_html = (
+    # No hand-built table of contents: Drive's HTML import drops the anchors, so its links
+    # break ("Bookmark no longer exists"). Docs' own outline lists every heading instead.
+    intro = (
         "<p><i>Read-only copy of the Second Pass study log, rewritten after every save. "
-        "Edits made here will be overwritten.</i></p>"
-        "<p><b>Table of Contents</b></p><ul>" + "".join(items) + "</ul><hr>"
+        "Edits made here will be overwritten. To jump to any entry, open the document "
+        "outline: View &gt; Show outline (or the outline icon at the top left of the page).</i></p><hr>"
     )
     i = body.find("<h2")
-    body = body[:i] + toc_html + body[i:] if i >= 0 else toc_html + body
+    body = body[:i] + intro + body[i:] if i >= 0 else intro + body
     return "<html><body>" + body + "</body></html>"
 
 
