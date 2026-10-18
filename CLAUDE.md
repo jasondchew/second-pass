@@ -68,3 +68,13 @@ The text is threaded into `retrieval_prompts_prompt`, `check_understanding_promp
 - `src/orchestration/client.py` - Anthropic API wrapper, copied from the AI Tutor project's already-debugged version (truncation-aware retry included from the start), plus a `transcribe()` method for image/PDF handwriting OCR
 - `src/orchestration/prompts.py` - `retrieval_prompts_prompt`, `organize_entry_prompt` (subject/tag classification, no fixed lists), `check_understanding_prompt` (post-save correctness feedback), `grade_answers_prompt` (per-prompt verdict on his raw answer, shown to him), `revise_entry_prompt` (rewrites flagged content and fills graded gaps), `transcribe_prompt`
 - `study_log.md` - the actual reference content. It has real value, so never delete it, but it is private: gitignored and removed from the public repo on 2026-10-17 at Jason's request. Never re-add it to git.
+
+# Google Drive mirror of the log (added 2026-10-17)
+
+`study_log.md` is mirrored to a Google Doc, "Study Journal (Data & AI)", in Jason's Drive (the doc's id lives in Claude's memory, not in this public repo). Jason edits BOTH copies, so a sync is a two-way merge, never a blind overwrite. The app itself does not talk to Drive (no Google login in the app; that would be scope creep). Syncing happens in a Claude session when Jason says "sync my study log":
+
+1. Read the Drive doc as text and compare it with `.study_log_last_sync.md` (gitignored: the log exactly as last pushed). Anything that differs was edited on Drive since the last sync.
+2. Compare `study_log.md` with the same snapshot to find what changed locally (new Second Pass entries, revisions).
+3. Port Drive-side edits into `study_log.md`. If the same entry changed on both sides, show Jason both versions and ask; never pick one silently.
+4. Push local-only changes into the existing Drive doc in place with the Google Docs connector (same doc, same link). Never recreate the doc. `scripts/md_to_gdoc.py` (gitignored helper) renders the log as HTML with a linked table of contents for a from-scratch rebuild, only if Jason asks for one.
+5. Overwrite `.study_log_last_sync.md` with the merged `study_log.md`.

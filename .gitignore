@@ -7,3 +7,5 @@ __pycache__/
 .study_log_index.json
 .second_pass_history.jsonl
 study_log.md
+.study_log_last_sync.md
+scripts/
