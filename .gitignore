@@ -9,3 +9,6 @@ __pycache__/
 study_log.md
 .study_log_last_sync.md
 scripts/
+credentials.json
+token.json
+.drive_mirror.json

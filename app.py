@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from src.orchestration.client import LogLLM
 from src.orchestration.source import fetch_source
+from src.orchestration import drive_mirror
 from src.orchestration.prompts import (
     check_understanding_prompt,
     enrich_entry_prompt,
@@ -399,6 +400,19 @@ def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_
     return bullets, check, revised, False
 
 
+def mirror_log() -> None:
+    """Rewrite the read-only Drive copy of the log after a save. Skipped until Drive is
+    connected, and a failure never blocks or undoes the save itself."""
+    if not drive_mirror.is_configured():
+        st.session_state["drive_status"] = None
+        return
+    try:
+        drive_mirror.push(LOG_PATH)
+        st.session_state["drive_status"] = ("ok", "Your Drive journal was updated too.")
+    except Exception as e:
+        st.session_state["drive_status"] = ("error", f"Saved to the log, but the Drive copy wasn't updated: {e}")
+
+
 def entry_input(notes: str, answers: str) -> str:
     """The log entry is one blended reference sheet built from BOTH the Section 1 notes and
     the prompt answers; where a point came from doesn't matter once it's in the log.
@@ -470,6 +484,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
         entry_text = append_entry(subject, tag, title, bullets)
 
     upsert_index(material, subject, tag, title, bullets, entry_text)
+    mirror_log()
     append_history(material, source_url, prompts_given, raw_summary, subject, title, grades)
     st.session_state["last_entry"] = {
         "subject": subject,
@@ -491,6 +506,9 @@ if st.session_state.get("last_entry"):
     check = st.session_state.get("last_check") or {}
 
     st.success(f'Saved under "{entry["subject"]}" as "{entry["title"]}".')
+    drive_status = st.session_state.get("drive_status")
+    if drive_status:
+        (st.caption if drive_status[0] == "ok" else st.warning)(drive_status[1])
 
     grades = st.session_state.get("last_grades") or []
     if grades:
@@ -505,7 +523,6 @@ if st.session_state.get("last_entry"):
                 st.warning(line + f"\n\n**Correct answer:** {g.get('correct_answer', '')}")
     st.markdown(f"**{entry['title']}**" + (f" _{entry['tag']}_" if entry["tag"] else ""))
     st.markdown(entry["bullets"])
-    st.caption("Copy this into Google Docs (or wherever else) too, if you want it there as well.")
 
     if st.session_state.get("last_source_text"):
         st.markdown("**Fact-check of the saved entry** _(checked against your source link; still AI-generated, so verify anything that surprises you)_")
@@ -547,6 +564,7 @@ if st.session_state.get("last_entry"):
                 new_bullets,
                 new_entry_text,
             )
+            mirror_log()
 
             recheck_system, recheck_user = check_understanding_prompt(
                 st.session_state.get("last_material", ""),
