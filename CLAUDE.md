@@ -67,4 +67,4 @@ The text is threaded into `retrieval_prompts_prompt`, `check_understanding_promp
 - `app.py` - the entire UI, single page
 - `src/orchestration/client.py` - Anthropic API wrapper, copied from the AI Tutor project's already-debugged version (truncation-aware retry included from the start), plus a `transcribe()` method for image/PDF handwriting OCR
 - `src/orchestration/prompts.py` - `retrieval_prompts_prompt`, `organize_entry_prompt` (subject/tag classification, no fixed lists), `check_understanding_prompt` (post-save correctness feedback), `grade_answers_prompt` (per-prompt verdict on his raw answer, shown to him), `revise_entry_prompt` (rewrites flagged content and fills graded gaps), `transcribe_prompt`
-- `study_log.md` - the actual reference content. This file has real value and should be kept/committed, unlike gitignored run artifacts in Jason's other projects.
+- `study_log.md` - the actual reference content. It has real value, so never delete it, but it is private: gitignored and removed from the public repo on 2026-10-17 at Jason's request. Never re-add it to git.

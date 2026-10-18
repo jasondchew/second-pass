@@ -47,7 +47,7 @@ app.py                          Streamlit UI and the save / verify / enrich flow
 src/orchestration/client.py     Anthropic API wrapper (truncation-aware retry, handwriting transcription)
 src/orchestration/prompts.py    Prompts for questions, organizing, fact-checking, revising, enriching
 src/orchestration/source.py     Fetches and cleans the linked source page
-study_log.md                    The running log the app writes to (my real study notes)
+study_log.md                    The running log the app writes to (kept local, not in the repo)
 ```
 
 Built with Python, Streamlit, and the Anthropic API.
