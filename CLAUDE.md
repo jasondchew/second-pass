@@ -78,3 +78,10 @@ The text is threaded into `retrieval_prompts_prompt`, `check_understanding_promp
 3. Port Drive-side edits into `study_log.md`. If the same entry changed on both sides, show Jason both versions and ask; never pick one silently.
 4. Push local-only changes into the existing Drive doc in place with the Google Docs connector (same doc, same link). Never recreate the doc. `scripts/md_to_gdoc.py` (gitignored helper) renders the log as HTML with a linked table of contents for a from-scratch rebuild, only if Jason asks for one.
 5. Overwrite `.study_log_last_sync.md` with the merged `study_log.md`.
+
+# Notes accuracy check (added 2026-10-17)
+
+Jason asked how his Section 1 notes get checked; they weren't: every check treated "original material" as the reference, so a wrong note could make a correct answer look wrong (or confirm a wrong one) when no source loads, e.g. a YouTube video. Two changes, no extra API calls:
+1. `retrieval_prompts_prompt` now also returns `note_flags`: factually wrong statements in the notes, each quoted with a one-line correction, judged against the SOURCE when loaded, otherwise established knowledge. Only wrong statements count, never brevity or messiness, and prompts are never built on a flagged statement. `app.py` shows them as a warning under the prompt button, naming what they were checked against, so he can fix the notes and regenerate before studying.
+2. `NOTES_RULE` is added to the check, grade and revise prompts: the material may be wrong, so the SOURCE or established facts win over it.
+Verified live 2026-10-17: two planted errors in neural-network notes (activation "0 to 100", "weights are added") were both flagged; the corrected notes got no flags.

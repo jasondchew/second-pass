@@ -282,7 +282,17 @@ if st.button("Generate handwriting prompts", disabled=not material.strip()):
     with st.spinner("Thinking of what to ask you..."):
         result = llm.complete_json(system, user)
     st.session_state["prompts"] = result.get("prompts", [])
+    st.session_state["note_flags"] = result.get("note_flags", [])
     persist_draft()
+
+if st.session_state.get("note_flags"):
+    where = "your source" if source_text else "the AI's own knowledge (no source loaded)"
+    st.warning(
+        f"Possible mistakes in your notes, checked against {where}. Fix them in the "
+        "box above before you study, then generate the prompts again. AI-checked, so "
+        "double-check anything surprising.\n\n"
+        + "\n".join(f"- {f}" for f in st.session_state["note_flags"])
+    )
 
 if st.session_state["prompts"]:
     st.success("Close this tab. Handwrite (or sketch) your answers to these on paper/tablet. Come back when you're done.")
