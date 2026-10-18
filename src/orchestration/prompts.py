@@ -86,6 +86,11 @@ def organize_entry_prompt(
         "reasoning as much as possible. Only clean up structure and grammar. "
         "Never invent content the user didn't write, and never add an "
         "explanation they didn't already give.\n\n"
+        "The input may have two parts: notes taken while reading/watching, and "
+        "answers to recall prompts. Blend them into ONE set of bullets organized "
+        "by idea, as a reference sheet they'll look back at: merge points that "
+        "say the same thing so each appears once, keep every distinct point from "
+        "both parts, and never label or separate which part a point came from.\n\n"
         "Separately, check whether these notes are substantially about the "
         "same narrow topic as an existing entry - not just the same broad "
         "subject, but close enough that the two would read as redundant "
@@ -102,7 +107,7 @@ def organize_entry_prompt(
         '"title": "...", "markdown_bullets": "- ...\\n- ...", '
         '"duplicate_of_title": "..."}'
     )
-    user = f"{hint_line}Handwritten notes (typed up):\n\n{raw_summary}"
+    user = f"{hint_line}Study notes:\n\n{raw_summary}"
     return system, user
 
 

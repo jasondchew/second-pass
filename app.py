@@ -399,19 +399,29 @@ def verify_and_correct(llm, material_text, prompts, bullets, raw_answer, source_
     return bullets, check, revised, False
 
 
+def entry_input(notes: str, answers: str) -> str:
+    """The log entry is one blended reference sheet built from BOTH the Section 1 notes and
+    the prompt answers; where a point came from doesn't matter once it's in the log.
+    Grading still looks at the answers alone."""
+    parts = [f"Notes from reading/watching:\n{notes.strip()}"] if notes.strip() else []
+    parts.append(f"Answers to recall prompts:\n{answers.strip()}")
+    return "\n\n".join(parts)
+
+
 if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
     llm = LogLLM()
     prior = find_prior_entry(material)
     prompts_given = st.session_state["prompts"] or []
     target = None  # existing entry to overwrite, if enriching
     result = {}
+    study_text = entry_input(material, raw_summary)
 
     if prior:
         st.info("Same notes as an existing entry - enriching it instead of creating a duplicate.")
         target = prior
     else:
         hint = "" if subject_hint == "Let AI decide" else subject_hint
-        system, user = organize_entry_prompt(raw_summary, subjects, existing_titles(), hint)
+        system, user = organize_entry_prompt(study_text, subjects, existing_titles(), hint)
         with st.spinner("Organizing into your study log..."):
             result = llm.complete_json(system, user)
 
@@ -424,14 +434,14 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
             target = {**same_topic, "title": dup_title}
 
     if target:
-        enrich_system, enrich_user = enrich_entry_prompt(target["bullets"], raw_summary)
+        enrich_system, enrich_user = enrich_entry_prompt(target["bullets"], study_text)
         with st.spinner("Merging into your existing entry..."):
             bullets = llm.complete_json(enrich_system, enrich_user)["markdown_bullets"]
         if loses_content(target["bullets"], bullets):
             # Same guard as the fact-check: a merge may add, never delete. Keep the
             # existing entry whole and add the new answer's bullets underneath it.
             if not result:
-                system, user = organize_entry_prompt(raw_summary, subjects, existing_titles(), "")
+                system, user = organize_entry_prompt(study_text, subjects, existing_titles(), "")
                 result = llm.complete_json(system, user)
             bullets = target["bullets"].rstrip() + "\n" + result["markdown_bullets"]
         subject, tag, title = target["subject"], target["tag"], target["title"]
@@ -447,7 +457,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
 
     with st.spinner("Fact-checking your notes before saving..."):
         bullets, check, was_revised, revision_rejected = verify_and_correct(
-            llm, material, prompts_given, bullets, raw_summary, source_text, answer_gaps(grades)
+            llm, material, prompts_given, bullets, study_text, source_text, answer_gaps(grades)
         )
     if revision_rejected:
         st.warning("The fact-check wanted to change your notes, but the rewrite would have removed some of what you wrote, so it was NOT applied. Your entry was saved as you wrote it; the flags below are for you to review.")
@@ -470,7 +480,7 @@ if st.button("Save to log & check answers", disabled=not raw_summary.strip()):
     }
     st.session_state["last_material"] = material
     st.session_state["last_prompts"] = prompts_given
-    st.session_state["last_answer"] = raw_summary
+    st.session_state["last_answer"] = study_text  # revise sees notes + answers, same as the save did
     st.session_state["last_check"] = check
     st.session_state["last_grades"] = grades
     st.session_state["last_source_text"] = source_text
