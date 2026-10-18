@@ -47,8 +47,13 @@ def retrieval_prompts_prompt(material: str, source_text: str | None = None) -> t
         "certain. Flag only wrong statements: never flag notes for being brief, "
         "incomplete, informal, or messy. If nothing is wrong, \"note_flags\" must "
         "be an empty list. Never build a prompt on a statement you flagged; ask "
-        "about the correct idea instead.\n\n"
-        'Respond with ONLY this JSON: {"prompts": ["...", "..."], "note_flags": ["...", "..."]}'
+        "about the correct idea instead. In \"corrected_notes\", return the user's "
+        "material with ONLY the flagged statements fixed in place: keep every other "
+        "word, line break, and the order exactly as written, and never remove, "
+        "summarize, or reword anything you didn't flag. If nothing is flagged, "
+        "\"corrected_notes\" must be an empty string.\n\n"
+        'Respond with ONLY this JSON: {"prompts": ["...", "..."], "note_flags": ["...", "..."], '
+        '"corrected_notes": "..."}'
     )
     user = f"Material or topic:\n\n{material}" + _source_block(source_text)
     return system, user

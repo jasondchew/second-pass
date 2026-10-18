@@ -214,6 +214,14 @@ def persist_draft() -> None:
     )
 
 
+def apply_note_corrections() -> None:
+    """on_click callback: swap the AI-corrected notes into the notes box. Runs before the
+    rerun renders the box, which is the only point Streamlit lets a widget's value change."""
+    st.session_state["material_box"] = st.session_state.pop("corrected_notes", "")
+    st.session_state["note_flags"] = []
+    persist_draft()
+
+
 def get_source(url: str) -> tuple[str | None, str | None]:
     """Fetch the linked source once per URL per session (cached), so re-runs and both the
     prompt-generation and fact-check steps reuse it instead of re-downloading the page."""
@@ -283,16 +291,24 @@ if st.button("Generate handwriting prompts", disabled=not material.strip()):
         result = llm.complete_json(system, user)
     st.session_state["prompts"] = result.get("prompts", [])
     st.session_state["note_flags"] = result.get("note_flags", [])
+    fixed = (result.get("corrected_notes") or "").strip()
+    # A fix may change a wrong statement but must never drop the rest of the notes
+    keeps_notes = len(fixed) >= 0.8 * len(material.strip())
+    st.session_state["corrected_notes"] = fixed if st.session_state["note_flags"] and keeps_notes else ""
     persist_draft()
 
 if st.session_state.get("note_flags"):
     where = "your source" if source_text else "the AI's own knowledge (no source loaded)"
-    st.warning(
-        f"Possible mistakes in your notes, checked against {where}. Fix them in the "
-        "box above before you study, then generate the prompts again. AI-checked, so "
+    st.info(
+        f"Suggested fixes to your notes, checked against {where}. Nothing here is "
+        "graded; it just keeps what you study from correct. AI-checked, so "
         "double-check anything surprising.\n\n"
         + "\n".join(f"- {f}" for f in st.session_state["note_flags"])
     )
+    if st.session_state.get("corrected_notes"):
+        st.button("Apply fixes to my notes", on_click=apply_note_corrections)
+    else:
+        st.caption("Edit the notes box above to apply these.")
 
 if st.session_state["prompts"]:
     st.success("Close this tab. Handwrite (or sketch) your answers to these on paper/tablet. Come back when you're done.")
